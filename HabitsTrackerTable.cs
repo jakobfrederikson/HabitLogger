@@ -53,7 +53,7 @@ public class HabitsTrackerTable : IHabitLoggerTable
 						VALUES ($q,$d,$id);
 					";
 				command.Parameters.AddWithValue("$q", habitQuantity);
-				command.Parameters.AddWithValue("$d", DateTime.UtcNow.ToShortDateString());
+				command.Parameters.AddWithValue("$d", DateTime.Now.ToShortDateString());
 				command.Parameters.AddWithValue("$id", habitId);
 
 				TableHelper.TryExecuteNonQuery(connection, command);

@@ -51,7 +51,7 @@ public class HabitsTable : IHabitLoggerTable
 						VALUES ($name,$date);
 					";
 				command.Parameters.AddWithValue("$name", habitName);
-				command.Parameters.AddWithValue("$date", DateTime.UtcNow.ToShortDateString());
+				command.Parameters.AddWithValue("$date", DateTime.Now.ToShortDateString());
 
 				TableHelper.TryExecuteNonQuery(connection, command);
 			}
