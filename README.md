@@ -1,7 +1,7 @@
 # Habit Logger
-## _Log Your Habits in The Console_
+## _Log Your Habits Using The Console_
 
-Created in C# and SQLite
+Created with C# and SQLite.
 
 ## Features
 - Register a habit
