@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
 using ConsoleTables;
 
-namespace HabitLogger.Database;
+namespace HabitLogger.src.Database;
 
 public class DatabaseManager
 {

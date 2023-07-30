@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HabitLogger.Database;
+namespace HabitLogger.src.Database;
 
 public class TableHelper
 {

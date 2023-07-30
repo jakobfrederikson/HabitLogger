@@ -6,9 +6,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HabitLogger.Database;
+namespace HabitLogger.src.Database;
 
-public class HabitsTable : IHabitLoggerTable
+public class HabitsTrackerTable : IHabitLoggerTable
 {
     public string? Filename { get; set; }
 
@@ -21,10 +21,12 @@ public class HabitsTable : IHabitLoggerTable
                 connection.Open();
                 command.CommandText =
                     @" 
-						CREATE TABLE IF NOT EXISTS Habits (
-							HabitId		INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-							HabitName	TEXT NOT NULL,
-							Date		TEXT NOT NULL
+						CREATE TABLE IF NOT EXISTS HabitsTracker(
+							EntryId         INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+							EntryQuantity   INTEGER NOT NULL,
+							Date            TEXT NOT NULL,
+							HabitId         INTEGER NOT NULL,
+							FOREIGN KEY(HabitId) REFERENCES Habits(HabitId)
 						);
 					";
 
@@ -34,9 +36,10 @@ public class HabitsTable : IHabitLoggerTable
     }
 
     /// <summary>
-    /// Create a habit to be inserted in the Habits table.
+    /// Create an entry to be inserted in the HabitsTracker table.
     /// </summary>
-    /// <param name="habitName">The name of the habit.</param>
+    /// <param name="habitId">The id of the parent to which you are tracking.</param>
+    /// <param name="habitQuantity">The quantity of times you completed this habit.</param>
     public void Create(string habitName = "default", int habitId = 0, int habitQuantity = 0)
     {
         using (var connection = new SqliteConnection($"Data Source={Filename}"))
@@ -46,11 +49,12 @@ public class HabitsTable : IHabitLoggerTable
                 connection.Open();
                 command.CommandText =
                     @"
-						INSERT INTO Habits (HabitName, Date) 
-						VALUES ($name,$date);
+						INSERT INTO HabitsTracker (EntryQuantity, Date, HabitId) 
+						VALUES ($q,$d,$id);
 					";
-                command.Parameters.AddWithValue("$name", habitName);
-                command.Parameters.AddWithValue("$date", DateTime.Now.ToShortDateString());
+                command.Parameters.AddWithValue("$q", habitQuantity);
+                command.Parameters.AddWithValue("$d", DateTime.Now.ToShortDateString());
+                command.Parameters.AddWithValue("$id", habitId);
 
                 TableHelper.TryExecuteNonQuery(connection, command);
             }
@@ -58,7 +62,7 @@ public class HabitsTable : IHabitLoggerTable
     }
 
     /// <summary>
-    /// View all entries within the Habits table.
+    /// View all entries in the HabitsTracker table.
     /// </summary>
     public void Read()
     {
@@ -67,17 +71,18 @@ public class HabitsTable : IHabitLoggerTable
             using (var command = connection.CreateCommand())
             {
                 connection.Open();
-                var table = new ConsoleTable("Id", "Habit", "Date Started");
-                command.CommandText = "SELECT * FROM Habits";
+                var table = new ConsoleTable("Id", "Quantity", "Date Logged", "Foreign Key");
+                command.CommandText = "SELECT * FROM HabitsTracker";
 
                 using (var reader = command.ExecuteReader())
                 {
                     while (reader.Read())
                     {
                         var id = reader.GetString(0);
-                        var name = reader.GetString(1);
-                        var date = reader.GetString(2);
-                        table.AddRow(id, name, date);
+                        var quantity = reader.GetString(1);
+                        var dateLogged = reader.GetString(2);
+                        var foreignKey = reader.GetString(3);
+                        table.AddRow(id, quantity, dateLogged, foreignKey);
                     }
 
                     table.Write();
@@ -87,12 +92,12 @@ public class HabitsTable : IHabitLoggerTable
     }
 
     /// <summary>
-    /// Update the name or date of a habit in the Habits table.
+    /// Update the quantity, date, or foreign key of an entry in the HabitsTracker table.
     /// </summary>
-    /// <param name="habitId">The ID of the habit.</param>
+    /// <param name="entryId">The ID of the entry.</param>
     /// <param name="updateString">The string to replace the old data.</param>
-    /// <param name="updateOption">Supply the option to update the name or date.</param>
-    public void Update(int habitId, string updateString, UpdateOptions updateOption)
+    /// <param name="updateOption">Specify the data to update.</param>
+    public void Update(int entryId, string updateString, UpdateOptions updateOption)
     {
         using (var connection = new SqliteConnection($"Data Source={Filename}"))
         {
@@ -102,20 +107,28 @@ public class HabitsTable : IHabitLoggerTable
 
                 switch (updateOption)
                 {
-                    case UpdateOptions.Hname:
-                        command.CommandText =
-                            @"
-								UPDATE Habits
-								SET HabitName = $value
-								WHERE HabitId = $habitId;
-							";
-                        break;
                     case UpdateOptions.Date:
                         command.CommandText =
                             @"
-								UPDATE Habits
-								SET Date = $value
-								WHERE HabitId = $habitId;
+								UPDATE HabitsTracker
+								SET HabitName = $value
+								WHERE HabitId = $entryId;
+							";
+                        break;
+                    case UpdateOptions.Tquantity:
+                        command.CommandText =
+                            @"
+								UPDATE HabitsTracker
+								SET EntryQuantity = $value
+								WHERE EntryId = $entryId;
+							";
+                        break;
+                    case UpdateOptions.TforeignKey:
+                        command.CommandText =
+                            @"
+								UPDATE HabitsTracker
+								SET HabitId = $value
+								WHERE EntryId = $entryId;
 							";
                         break;
                     default:
@@ -123,7 +136,7 @@ public class HabitsTable : IHabitLoggerTable
                 }
 
                 command.Parameters.AddWithValue("$value", updateString);
-                command.Parameters.AddWithValue("$habitId", habitId);
+                command.Parameters.AddWithValue("$entryId", entryId);
 
                 TableHelper.TryExecuteNonQuery(connection, command);
             }
@@ -131,10 +144,10 @@ public class HabitsTable : IHabitLoggerTable
     }
 
     /// <summary>
-    /// Delete a habit from the Habits table.
+    /// Delete an from the HabitsTracker table.
     /// </summary>
-    /// <param name="habitId">The id of the habit to delete.</param>
-    public void Delete(int habitId)
+    /// <param name="entryId">The id of the entry to delete.</param>
+    public void Delete(int entryId)
     {
         using (var connection = new SqliteConnection($"Data Source={Filename}"))
         {
@@ -144,10 +157,10 @@ public class HabitsTable : IHabitLoggerTable
 
                 command.CommandText =
                             @"
-								DELETE FROM Habits
-								WHERE HabitId = $habitId;
+								DELETE FROM HabitsTracker
+								WHERE EntryId = $entryId;
 							";
-                command.Parameters.AddWithValue("$habitId", habitId);
+                command.Parameters.AddWithValue("$entryId", entryId);
 
                 TableHelper.TryExecuteNonQuery(connection, command);
             }

@@ -4,9 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static HabitLogger.Database.DatabaseManager;
 
-namespace HabitLogger.Database;
+namespace HabitLogger.src.Database;
 
 public enum UpdateOptions { None, Date, Hname, Tquantity, TforeignKey }
 public interface IHabitLoggerTable
