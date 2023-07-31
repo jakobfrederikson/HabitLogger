@@ -12,6 +12,8 @@ public class HabitsTable : IHabitLoggerTable
 {
     public string? Filename { get; set; }
 
+    public bool Empty => isEmpty();
+
     public void CreateTableIfNotExists()
     {
         using (var connection = new SqliteConnection($"Data Source={Filename}"))
@@ -34,10 +36,32 @@ public class HabitsTable : IHabitLoggerTable
     }
 
     /// <summary>
-    /// Create a habit to be inserted in the Habits table.
+    /// Returns true if the table is empty.
     /// </summary>
-    /// <param name="habitName">The name of the habit.</param>
-    public void Create(string habitName = "default", int habitId = 0, int habitQuantity = 0)
+    /// <returns></returns>
+	private bool isEmpty()
+    {
+		using (var connection = new SqliteConnection($"Data Source={Filename}"))
+		{
+			using (var command = connection.CreateCommand())
+			{                
+				connection.Open();
+				command.CommandText =
+					@" 
+						SELECT * FROM Habits;
+					";
+
+				using var reader = command.ExecuteReader();
+				return reader.HasRows ? false : true;
+			}
+		}
+    }
+
+	/// <summary>
+	/// Create a habit to be inserted in the Habits table.
+	/// </summary>
+	/// <param name="habitName">The name of the habit.</param>
+	public void Create(string habitName = "default", int habitId = 0, int habitQuantity = 0)
     {
         using (var connection = new SqliteConnection($"Data Source={Filename}"))
         {

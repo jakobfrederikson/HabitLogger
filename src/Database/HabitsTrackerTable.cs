@@ -12,7 +12,9 @@ public class HabitsTrackerTable : IHabitLoggerTable
 {
     public string? Filename { get; set; }
 
-    public void CreateTableIfNotExists()
+	public bool Empty => isEmpty();
+
+	public void CreateTableIfNotExists()
     {
         using (var connection = new SqliteConnection($"Data Source={Filename}"))
         {
@@ -35,12 +37,34 @@ public class HabitsTrackerTable : IHabitLoggerTable
         }
     }
 
-    /// <summary>
-    /// Create an entry to be inserted in the HabitsTracker table.
-    /// </summary>
-    /// <param name="habitId">The id of the parent to which you are tracking.</param>
-    /// <param name="habitQuantity">The quantity of times you completed this habit.</param>
-    public void Create(string habitName = "default", int habitId = 0, int habitQuantity = 0)
+	/// <summary>
+	/// Returns true if the table is empty.
+	/// </summary>
+	/// <returns></returns>
+	private bool isEmpty()
+	{
+		using (var connection = new SqliteConnection($"Data Source={Filename}"))
+		{
+			using (var command = connection.CreateCommand())
+			{
+				connection.Open();
+				command.CommandText =
+					@" 
+						SELECT * FROM HabitsTracker;
+					";
+
+				using var reader = command.ExecuteReader();
+                return reader.HasRows ? false: true;
+			}
+		}
+	}
+
+	/// <summary>
+	/// Create an entry to be inserted in the HabitsTracker table.
+	/// </summary>
+	/// <param name="habitId">The id of the parent to which you are tracking.</param>
+	/// <param name="habitQuantity">The quantity of times you completed this habit.</param>
+	public void Create(string habitName = "default", int habitId = 0, int habitQuantity = 0)
     {
         using (var connection = new SqliteConnection($"Data Source={Filename}"))
         {
