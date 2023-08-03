@@ -1,5 +1,6 @@
 ﻿using System;
 using HabitLogger.src.Database;
+using HabitLogger.src.DeclarativeConsoleMenu;
 
 namespace HabitLogger.src;
 
@@ -7,11 +8,7 @@ class Program
 {
     static void Main(string[] args)
     {
-        DatabaseManager db = new DatabaseManager("habitlogger.db",
-                                                 new HabitsTable(),
-                                                 new HabitsTrackerTable());
-        ConsoleManager consoleManager = new ConsoleManager(db);
-
-        consoleManager.StartApp();
+        MenuCollection menus = MenuGenerator.CreateMenuCollection();
+        menus.StartApp();
     }
 }
