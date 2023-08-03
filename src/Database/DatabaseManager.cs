@@ -10,19 +10,16 @@ namespace HabitLogger.src.Database;
 
 public class DatabaseManager
 {
-    public IHabitLoggerTable Habits { get; }
-    public IHabitLoggerTable HabitsTracker { get; }
+    private static DatabaseManager? instance;
+    public static DatabaseManager Instance { 
+        get 
+        {
+            if (instance == null)
+                instance = new DatabaseManager();
 
-    public enum HabitUpdateOptions { Name, Date }
-
-    public DatabaseManager(string _Filename, HabitsTable _Habits, HabitsTrackerTable _HabitsTracker)
-    {
-        Habits = _Habits;
-        Habits.Filename = _Filename;
-        Habits.CreateTableIfNotExists();
-
-        HabitsTracker = _HabitsTracker;
-        HabitsTracker.Filename = _Filename;
-        HabitsTracker.CreateTableIfNotExists();
+            return instance;
+        }
     }
+    public HabitsTable Habits { get; } = new HabitsTable();
+    public HabitsTrackerTable HabitsTracker { get; } = new HabitsTrackerTable();
 }
