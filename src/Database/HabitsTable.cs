@@ -1,4 +1,5 @@
 ﻿using ConsoleTables;
+using HabitLogger.src.DeclarativeConsoleMenu;
 using Microsoft.Data.Sqlite;
 using System;
 using System.Collections.Generic;
@@ -8,10 +9,17 @@ using System.Threading.Tasks;
 
 namespace HabitLogger.src.Database;
 
-public class HabitsTable : IHabitLoggerTable
-{
-    public string? Filename { get; set; }
 
+public enum HabitsUpdateOptions { Date, Name }
+public class HabitsTable
+{
+    public HabitsTable()
+    {
+        Filename = "habitlogger.db";
+        CreateTableIfNotExists();
+    }
+
+    public string? Filename { get; }
     public bool Empty => isEmpty();
 
     public void CreateTableIfNotExists()
@@ -60,31 +68,41 @@ public class HabitsTable : IHabitLoggerTable
 	/// <summary>
 	/// Create a habit to be inserted in the Habits table.
 	/// </summary>
-	/// <param name="habitName">The name of the habit.</param>
-	public void Create(string habitName = "default", int habitId = 0, int habitQuantity = 0)
+	public void Create()
     {
-        using (var connection = new SqliteConnection($"Data Source={Filename}"))
+        string habitName = ConsoleHelper.GetValidString("Enter the habit name: ");
+        if (ConsoleHelper.Confirm("Confirm habit creation?"))
         {
-            using (var command = connection.CreateCommand())
+            using (var connection = new SqliteConnection($"Data Source={Filename}"))
             {
-                connection.Open();
-                command.CommandText =
-                    @"
+                using (var command = connection.CreateCommand())
+                {
+                    connection.Open();
+                    command.CommandText =
+                        @"
 						INSERT INTO Habits (HabitName, Date) 
 						VALUES ($name,$date);
 					";
-                command.Parameters.AddWithValue("$name", habitName);
-                command.Parameters.AddWithValue("$date", DateTime.Now.ToShortDateString());
+                    command.Parameters.AddWithValue("$name", habitName);
+                    command.Parameters.AddWithValue("$date", DateTime.Now.ToShortDateString());
 
-                TableHelper.TryExecuteNonQuery(connection, command);
+                    TableHelper.TryExecuteNonQuery(connection, command);
+                }
             }
+            Console.Write($"New habit {habitName.ToUpper()} created.");
+            Console.ReadKey(false);
+        } 
+        else
+        {
+            Console.Write($"Cancelled habit creation.");
+            Console.ReadKey(false);
         }
     }
 
     /// <summary>
     /// View all entries within the Habits table.
     /// </summary>
-    public void Read()
+    public void Read(bool waitForUserResponse)
     {
         using (var connection = new SqliteConnection($"Data Source={Filename}"))
         {
@@ -107,74 +125,92 @@ public class HabitsTable : IHabitLoggerTable
                     table.Write();
                 }
             }
+            if (waitForUserResponse)
+            {
+                Console.Write("Press any key to continue. . .");
+                Console.ReadKey(false);
+            }            
         }
     }
 
     /// <summary>
     /// Update the name or date of a habit in the Habits table.
     /// </summary>
-    /// <param name="habitId">The ID of the habit.</param>
-    /// <param name="updateString">The string to replace the old data.</param>
-    /// <param name="updateOption">Supply the option to update the name or date.</param>
-    public void Update(int habitId, string updateString, UpdateOptions updateOption)
+    public void Update()
     {
-        using (var connection = new SqliteConnection($"Data Source={Filename}"))
-        {
-            using (var command = connection.CreateCommand())
-            {
-                connection.Open();
+        Read(false);
+        int habitId = ConsoleHelper.GetInt("Enter the id of the entry you'd like to change: ");
+        Console.WriteLine("[0] Date (d-mm-yyyy)");
+        Console.WriteLine("[1] Name");
+        HabitsUpdateOptions updateOption = (HabitsUpdateOptions)ConsoleHelper.GetInt("Choose what you would like to update: ");
+        string updateString = ConsoleHelper.GetValidString("Enter the new updated text: ");
 
-                switch (updateOption)
+        Console.WriteLine($"ID: {habitId} -- Update option: {updateOption.ToString()} -- New entry: {updateString}");
+        if (ConsoleHelper.Confirm("Confirm the update of this haibt?"))
+        {
+            using (var connection = new SqliteConnection($"Data Source={Filename}"))
+            {
+                using (var command = connection.CreateCommand())
                 {
-                    case UpdateOptions.Hname:
-                        command.CommandText =
-                            @"
+                    connection.Open();
+
+                    switch (updateOption)
+                    {
+                        case HabitsUpdateOptions.Name:
+                            command.CommandText =
+                                @"
 								UPDATE Habits
 								SET HabitName = $value
 								WHERE HabitId = $habitId;
 							";
-                        break;
-                    case UpdateOptions.Date:
-                        command.CommandText =
-                            @"
+                            break;
+                        case HabitsUpdateOptions.Date:
+                            command.CommandText =
+                                @"
 								UPDATE Habits
 								SET Date = $value
 								WHERE HabitId = $habitId;
 							";
-                        break;
-                    default:
-                        break;
+                            break;
+                        default:
+                            break;
+                    }
+
+                    command.Parameters.AddWithValue("$value", updateString);
+                    command.Parameters.AddWithValue("$habitId", habitId);
+
+                    TableHelper.TryExecuteNonQuery(connection, command);
                 }
-
-                command.Parameters.AddWithValue("$value", updateString);
-                command.Parameters.AddWithValue("$habitId", habitId);
-
-                TableHelper.TryExecuteNonQuery(connection, command);
             }
-        }
+        }        
     }
 
     /// <summary>
     /// Delete a habit from the Habits table.
     /// </summary>
-    /// <param name="habitId">The id of the habit to delete.</param>
-    public void Delete(int habitId)
+    public void Delete()
     {
-        using (var connection = new SqliteConnection($"Data Source={Filename}"))
-        {
-            using (var command = connection.CreateCommand())
-            {
-                connection.Open();
+        Read(false);
+        int habitId = ConsoleHelper.GetInt("Enter the id of the entry you'd like to change: ");
 
-                command.CommandText =
-                            @"
+        if (ConsoleHelper.Confirm("Confirm the deletion of this habit?"))
+        {
+            using (var connection = new SqliteConnection($"Data Source={Filename}"))
+            {
+                using (var command = connection.CreateCommand())
+                {
+                    connection.Open();
+
+                    command.CommandText =
+                                @"
 								DELETE FROM Habits
 								WHERE HabitId = $habitId;
 							";
-                command.Parameters.AddWithValue("$habitId", habitId);
+                    command.Parameters.AddWithValue("$habitId", habitId);
 
-                TableHelper.TryExecuteNonQuery(connection, command);
+                    TableHelper.TryExecuteNonQuery(connection, command);
+                }
             }
-        }
+        }        
     }
 }
