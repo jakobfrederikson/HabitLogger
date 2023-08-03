@@ -10,4 +10,5 @@
 ## Tech
 - C#
 - Microsoft SQLite
-- [ConsoleTables 2.5.0](https://github.com/khalidabuhakmeh/ConsoleTables)
+- [ConsoleTables v2.5.0](https://github.com/khalidabuhakmeh/ConsoleTables)
+- [Declarative Console Menu v1.0](https://github.com/alsiola/DeclarativeConsoleMenu/tree/master)
