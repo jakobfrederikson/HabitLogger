@@ -142,7 +142,7 @@ public class HabitsTable
         int habitId = ConsoleHelper.GetInt("Enter the id of the entry you'd like to change: ");
         Console.WriteLine("[0] Date (d-mm-yyyy)");
         Console.WriteLine("[1] Name");
-        HabitsUpdateOptions updateOption = (HabitsUpdateOptions)ConsoleHelper.GetInt("Choose what you would like to update: ");
+        HabitsUpdateOptions updateOption = (HabitsUpdateOptions)ConsoleHelper.GetInt("Choose what you would like to update: ", 1);
         string updateString = ConsoleHelper.GetValidString("Enter the new updated text: ");
 
         Console.WriteLine($"ID: {habitId} -- Update option: {updateOption.ToString()} -- New entry: {updateString}");
@@ -212,5 +212,23 @@ public class HabitsTable
                 }
             }
         }        
+    }
+
+    public string? GetHabitName(int habitId)
+    {
+        Console.WriteLine("INSIDE GetHabitName: " + habitId);
+        string? habitName;
+        using var connection = new SqliteConnection($"Data Source={Filename}");
+        using var command = connection.CreateCommand();
+        connection.Open();
+
+        command.CommandText = "SELECT HabitName FROM Habits WHERE HabitId = $habitId";
+        command.Parameters.AddWithValue("$habitId", habitId);
+
+        using var reader = command.ExecuteReader();
+        reader.Read();
+        habitName = reader.GetString(0);
+
+        return habitName;
     }
 }
