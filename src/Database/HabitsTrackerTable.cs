@@ -22,25 +22,22 @@ public class HabitsTrackerTable
 
 	public void CreateTableIfNotExists()
     {
-        using (var connection = new SqliteConnection($"Data Source={Filename}"))
-        {
-            using (var command = connection.CreateCommand())
-            {
-                connection.Open();
-                command.CommandText =
-                    @" 
-						CREATE TABLE IF NOT EXISTS HabitsTracker(
-							EntryId         INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-							EntryQuantity   INTEGER NOT NULL,
-							Date            TEXT NOT NULL,
-							HabitId         INTEGER NOT NULL,
-							FOREIGN KEY(HabitId) REFERENCES Habits(HabitId)
-						);
-					";
+        using var connection = new SqliteConnection($"Data Source={Filename}");
+        using var command = connection.CreateCommand();            
+        connection.Open();
 
-                TableHelper.TryExecuteNonQuery(connection, command);
-            }
-        }
+        command.CommandText =
+            @" 
+				CREATE TABLE IF NOT EXISTS HabitsTracker(
+					EntryId         INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+					EntryQuantity   INTEGER NOT NULL,
+					Date            TEXT NOT NULL,
+					HabitId         INTEGER NOT NULL,
+					FOREIGN KEY(HabitId) REFERENCES Habits(HabitId)
+				);
+			";
+
+        TableHelper.TryExecuteNonQuery(connection, command);
     }
 
 	/// <summary>
@@ -77,23 +74,20 @@ public class HabitsTrackerTable
 
         if (ConsoleHelper.Confirm("Confirm the the creation of this log?"))
         {
-            using (var connection = new SqliteConnection($"Data Source={Filename}"))
-            {
-                using (var command = connection.CreateCommand())
-                {
-                    connection.Open();
-                    command.CommandText =
-                        @"
-						INSERT INTO HabitsTracker (EntryQuantity, Date, HabitId) 
-						VALUES ($q,$d,$id);
-					";
-                    command.Parameters.AddWithValue("$q", habitQuantity);
-                    command.Parameters.AddWithValue("$d", DateTime.Now.ToShortDateString());
-                    command.Parameters.AddWithValue("$id", habitId);
+            using var connection = new SqliteConnection($"Data Source={Filename}");
+            using var command = connection.CreateCommand();                
+            connection.Open();
 
-                    TableHelper.TryExecuteNonQuery(connection, command);
-                }
-            }
+            command.CommandText =
+                @"
+				INSERT INTO HabitsTracker (EntryQuantity, Date, HabitId) 
+				VALUES ($q,$d,$id);
+			";
+            command.Parameters.AddWithValue("$q", habitQuantity);
+            command.Parameters.AddWithValue("$d", DateTime.Now.ToShortDateString());
+            command.Parameters.AddWithValue("$id", habitId);
+
+            TableHelper.TryExecuteNonQuery(connection, command);   
         }        
     }
 
@@ -145,48 +139,44 @@ public class HabitsTrackerTable
         Console.WriteLine($"ID: {entryId} -- Update option: {updateOption.ToString()} -- New entry: {updateString}");
         if (ConsoleHelper.Confirm("Confirm this update?"))
         {
-            using (var connection = new SqliteConnection($"Data Source={Filename}"))
+            using var connection = new SqliteConnection($"Data Source={Filename}");
+            using var command = connection.CreateCommand();                
+            connection.Open();
+
+            switch (updateOption)
             {
-                using (var command = connection.CreateCommand())
-                {
-                    connection.Open();
-
-                    switch (updateOption)
-                    {
-                        case LoggingUpdateOptions.Date:
-                            command.CommandText =
-                                @"
-								UPDATE HabitsTracker
-								SET HabitName = $value
-								WHERE HabitId = $entryId;
-							";
-                            break;
-                        case LoggingUpdateOptions.Quantity:
-                            command.CommandText =
-                                @"
-								UPDATE HabitsTracker
-								SET EntryQuantity = $value
-								WHERE EntryId = $entryId;
-							";
-                            break;
-                        case LoggingUpdateOptions.ForeginKey:
-                            command.CommandText =
-                                @"
-								UPDATE HabitsTracker
-								SET HabitId = $value
-								WHERE EntryId = $entryId;
-							";
-                            break;
-                        default:
-                            break;
-                    }
-
-                    command.Parameters.AddWithValue("$value", updateString);
-                    command.Parameters.AddWithValue("$entryId", entryId);
-
-                    TableHelper.TryExecuteNonQuery(connection, command);
-                }
+                case LoggingUpdateOptions.Date:
+                    command.CommandText =
+                        @"
+						UPDATE HabitsTracker
+						SET HabitName = $value
+						WHERE HabitId = $entryId;
+					";
+                    break;
+                case LoggingUpdateOptions.Quantity:
+                    command.CommandText =
+                        @"
+						UPDATE HabitsTracker
+						SET EntryQuantity = $value
+						WHERE EntryId = $entryId;
+					";
+                    break;
+                case LoggingUpdateOptions.ForeginKey:
+                    command.CommandText =
+                        @"
+						UPDATE HabitsTracker
+						SET HabitId = $value
+						WHERE EntryId = $entryId;
+					";
+                    break;
+                default:
+                    break;
             }
+
+            command.Parameters.AddWithValue("$value", updateString);
+            command.Parameters.AddWithValue("$entryId", entryId);
+
+            TableHelper.TryExecuteNonQuery(connection, command);
         }        
     }
 
@@ -200,22 +190,18 @@ public class HabitsTrackerTable
 
         if (ConsoleHelper.Confirm("Confirm the deletion of this log?"))
         {
-            using (var connection = new SqliteConnection($"Data Source={Filename}"))
-            {
-                using (var command = connection.CreateCommand())
-                {
-                    connection.Open();
+            using var connection = new SqliteConnection($"Data Source={Filename}");
+            using var command = connection.CreateCommand();                
+            connection.Open();
 
-                    command.CommandText =
-                                @"
-								DELETE FROM HabitsTracker
-								WHERE EntryId = $entryId;
-							";
-                    command.Parameters.AddWithValue("$entryId", entryId);
+            command.CommandText =
+                        @"
+						DELETE FROM HabitsTracker
+						WHERE EntryId = $entryId;
+					";
+            command.Parameters.AddWithValue("$entryId", entryId);
 
-                    TableHelper.TryExecuteNonQuery(connection, command);
-                }
-            }
+            TableHelper.TryExecuteNonQuery(connection, command);
         }        
     }
 }

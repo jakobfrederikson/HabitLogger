@@ -24,13 +24,12 @@ public class HabitsTable
 
     public void CreateTableIfNotExists()
     {
-        using (var connection = new SqliteConnection($"Data Source={Filename}"))
-        {
-            using (var command = connection.CreateCommand())
-            {
-                connection.Open();
-                command.CommandText =
-                    @" 
+        using var connection = new SqliteConnection($"Data Source={Filename}");
+        using var command = connection.CreateCommand();
+        connection.Open();
+
+        command.CommandText =
+            @" 
 						CREATE TABLE IF NOT EXISTS Habits (
 							HabitId		INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 							HabitName	TEXT NOT NULL,
@@ -38,9 +37,7 @@ public class HabitsTable
 						);
 					";
 
-                TableHelper.TryExecuteNonQuery(connection, command);
-            }
-        }
+        TableHelper.TryExecuteNonQuery(connection, command);
     }
 
     /// <summary>
@@ -73,22 +70,20 @@ public class HabitsTable
         string habitName = ConsoleHelper.GetValidString("Enter the habit name: ");
         if (ConsoleHelper.Confirm("Confirm habit creation?"))
         {
-            using (var connection = new SqliteConnection($"Data Source={Filename}"))
-            {
-                using (var command = connection.CreateCommand())
-                {
-                    connection.Open();
-                    command.CommandText =
-                        @"
-						INSERT INTO Habits (HabitName, Date) 
-						VALUES ($name,$date);
-					";
-                    command.Parameters.AddWithValue("$name", habitName);
-                    command.Parameters.AddWithValue("$date", DateTime.Now.ToShortDateString());
+            using var connection = new SqliteConnection($"Data Source={Filename}");            
+            using var command = connection.CreateCommand();
+            connection.Open();
 
-                    TableHelper.TryExecuteNonQuery(connection, command);
-                }
-            }
+            command.CommandText =
+                @"
+					INSERT INTO Habits (HabitName, Date) 
+					VALUES ($name,$date);
+				";
+            command.Parameters.AddWithValue("$name", habitName);
+            command.Parameters.AddWithValue("$date", DateTime.Now.ToShortDateString());
+
+            TableHelper.TryExecuteNonQuery(connection, command);            
+
             Console.Write($"New habit {habitName.ToUpper()} created.");
             Console.ReadKey(false);
         } 
@@ -104,32 +99,27 @@ public class HabitsTable
     /// </summary>
     public void Read(bool waitForUserResponse)
     {
-        using (var connection = new SqliteConnection($"Data Source={Filename}"))
+        using var connection = new SqliteConnection($"Data Source={Filename}");
+        using var command = connection.CreateCommand();        
+        connection.Open();
+
+        var table = new ConsoleTable("Id", "Habit", "Date Started");
+        command.CommandText = "SELECT * FROM Habits";
+
+        using var reader = command.ExecuteReader();        
+        while (reader.Read())
         {
-            using (var command = connection.CreateCommand())
-            {
-                connection.Open();
-                var table = new ConsoleTable("Id", "Habit", "Date Started");
-                command.CommandText = "SELECT * FROM Habits";
-
-                using (var reader = command.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        var id = reader.GetString(0);
-                        var name = reader.GetString(1);
-                        var date = reader.GetString(2);
-                        table.AddRow(id, name, date);
-                    }
-
-                    table.Write();
-                }
-            }
-            if (waitForUserResponse)
-            {
-                Console.Write("Press any key to continue. . .");
-                Console.ReadKey(false);
-            }            
+            var id = reader.GetString(0);
+            var name = reader.GetString(1);
+            var date = reader.GetString(2);
+            table.AddRow(id, name, date);
+        }
+        table.Write();        
+        
+        if (waitForUserResponse)
+        {
+            Console.Write("Press any key to continue. . .");
+            Console.ReadKey(false);
         }
     }
 
@@ -148,40 +138,36 @@ public class HabitsTable
         Console.WriteLine($"ID: {habitId} -- Update option: {updateOption.ToString()} -- New entry: {updateString}");
         if (ConsoleHelper.Confirm("Confirm the update of this haibt?"))
         {
-            using (var connection = new SqliteConnection($"Data Source={Filename}"))
-            {
-                using (var command = connection.CreateCommand())
-                {
-                    connection.Open();
+            using var connection = new SqliteConnection($"Data Source={Filename}");
+            using var command = connection.CreateCommand();
+            connection.Open();
 
-                    switch (updateOption)
-                    {
-                        case HabitsUpdateOptions.Name:
-                            command.CommandText =
-                                @"
+            switch (updateOption)
+            {
+                case HabitsUpdateOptions.Name:
+                    command.CommandText =
+                        @"
 								UPDATE Habits
 								SET HabitName = $value
 								WHERE HabitId = $habitId;
 							";
-                            break;
-                        case HabitsUpdateOptions.Date:
-                            command.CommandText =
-                                @"
+                    break;
+                case HabitsUpdateOptions.Date:
+                    command.CommandText =
+                        @"
 								UPDATE Habits
 								SET Date = $value
 								WHERE HabitId = $habitId;
 							";
-                            break;
-                        default:
-                            break;
-                    }
-
-                    command.Parameters.AddWithValue("$value", updateString);
-                    command.Parameters.AddWithValue("$habitId", habitId);
-
-                    TableHelper.TryExecuteNonQuery(connection, command);
-                }
+                    break;
+                default:
+                    break;
             }
+
+            command.Parameters.AddWithValue("$value", updateString);
+            command.Parameters.AddWithValue("$habitId", habitId);
+
+            TableHelper.TryExecuteNonQuery(connection, command);
         }        
     }
 
@@ -195,22 +181,18 @@ public class HabitsTable
 
         if (ConsoleHelper.Confirm("Confirm the deletion of this habit?"))
         {
-            using (var connection = new SqliteConnection($"Data Source={Filename}"))
-            {
-                using (var command = connection.CreateCommand())
-                {
-                    connection.Open();
+            using var connection = new SqliteConnection($"Data Source={Filename}");
+            using var command = connection.CreateCommand();
+            connection.Open();
 
-                    command.CommandText =
-                                @"
+            command.CommandText =
+                        @"
 								DELETE FROM Habits
 								WHERE HabitId = $habitId;
 							";
-                    command.Parameters.AddWithValue("$habitId", habitId);
+            command.Parameters.AddWithValue("$habitId", habitId);
 
-                    TableHelper.TryExecuteNonQuery(connection, command);
-                }
-            }
+            TableHelper.TryExecuteNonQuery(connection, command);
         }        
     }
 
