@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HabitLogger.src.DeclarativeConsoleMenu;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,48 +9,45 @@ namespace HabitLogger.src;
 
 public class ConsoleHelper
 {
-	public static void CreateMenu(string menuTitle, string[] menuOptions, string exitOption = "Exit")
-	{
-        Console.WriteLine(menuTitle);
-        for (int i = 0; i < menuOptions.Length; i++)
-		{
-            Console.WriteLine($"[{i + 1}] {menuOptions[i]}");
-        }
-		Console.WriteLine($"\n[0] {exitOption}");
-	}
-
 	public static string GetValidString(string message)
 	{
-		Console.Write(message);
-
-		string response = Console.ReadLine();
-
-		if (response == "")
+        Console.Write(message);
+        string response;
+        do
 		{
-			while (response == "")
-			{
-                Console.Write("Please enter a non-empty string: ");
-				response = Console.ReadLine();
-            }
-		}
+			response = Console.ReadLine();
+		} while (string.IsNullOrEmpty(response));
 
 		return response;
 	}
 
 	public static int GetInt(string message)
 	{
-		int number = 0;
+		int number;
 
         Console.Write(message);
 		while(!int.TryParse(Console.ReadLine(), out number))
 		{
-            Console.WriteLine($"{number} is not a number. Enter a valid id: ");
+            Console.Write($"{number} is not valid. Try again: ");
         }
 
 		return number;
     }
 
-	public static bool Confirm(string message)
+    public static int GetInt(string message, int maxValue)
+    {
+        int number;
+
+        Console.Write(message);
+        while (!int.TryParse(Console.ReadLine(), out number) || number > maxValue || number < 0)
+        {
+            Console.Write($"{number} is not valid. Try again: ");
+        }
+
+        return number;
+    }
+
+    public static bool Confirm(string message)
 	{
 		ConsoleKey response;
 
