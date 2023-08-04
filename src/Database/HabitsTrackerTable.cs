@@ -8,10 +8,16 @@ using System.Threading.Tasks;
 
 namespace HabitLogger.src.Database;
 
-public class HabitsTrackerTable : IHabitLoggerTable
+public enum LoggingUpdateOptions { Date, Quantity, ForeginKey }
+public class HabitsTrackerTable
 {
-    public string? Filename { get; set; }
+    public HabitsTrackerTable()
+    {
+        Filename = "habitlogger.db";
+        CreateTableIfNotExists();
+    }
 
+    public string? Filename { get; }
 	public bool Empty => isEmpty();
 
 	public void CreateTableIfNotExists()
@@ -40,7 +46,6 @@ public class HabitsTrackerTable : IHabitLoggerTable
 	/// <summary>
 	/// Returns true if the table is empty.
 	/// </summary>
-	/// <returns></returns>
 	private bool isEmpty()
 	{
 		using (var connection = new SqliteConnection($"Data Source={Filename}"))
@@ -62,132 +67,155 @@ public class HabitsTrackerTable : IHabitLoggerTable
 	/// <summary>
 	/// Create an entry to be inserted in the HabitsTracker table.
 	/// </summary>
-	/// <param name="habitId">The id of the parent to which you are tracking.</param>
-	/// <param name="habitQuantity">The quantity of times you completed this habit.</param>
-	public void Create(string habitName = "default", int habitId = 0, int habitQuantity = 0)
+	public void Create()
     {
-        using (var connection = new SqliteConnection($"Data Source={Filename}"))
+        // Show habits table first
+        DatabaseManager.Instance.Habits.Read(false);
+
+        int habitId = ConsoleHelper.GetInt("Enter the ID of the habit you're logging: ");
+        int habitQuantity = ConsoleHelper.GetInt("Enter the amount of times this habit was performed today: ");
+
+        if (ConsoleHelper.Confirm("Confirm the the creation of this log?"))
         {
-            using (var command = connection.CreateCommand())
+            using (var connection = new SqliteConnection($"Data Source={Filename}"))
             {
-                connection.Open();
-                command.CommandText =
-                    @"
+                using (var command = connection.CreateCommand())
+                {
+                    connection.Open();
+                    command.CommandText =
+                        @"
 						INSERT INTO HabitsTracker (EntryQuantity, Date, HabitId) 
 						VALUES ($q,$d,$id);
 					";
-                command.Parameters.AddWithValue("$q", habitQuantity);
-                command.Parameters.AddWithValue("$d", DateTime.Now.ToShortDateString());
-                command.Parameters.AddWithValue("$id", habitId);
+                    command.Parameters.AddWithValue("$q", habitQuantity);
+                    command.Parameters.AddWithValue("$d", DateTime.Now.ToShortDateString());
+                    command.Parameters.AddWithValue("$id", habitId);
 
-                TableHelper.TryExecuteNonQuery(connection, command);
+                    TableHelper.TryExecuteNonQuery(connection, command);
+                }
             }
-        }
+        }        
     }
 
     /// <summary>
     /// View all entries in the HabitsTracker table.
     /// </summary>
-    public void Read()
+    public void Read(bool waitForUserResponse)
     {
-        using (var connection = new SqliteConnection($"Data Source={Filename}"))
+        using var connection = new SqliteConnection($"Data Source={Filename}");
+        using var command = connection.CreateCommand();
+        connection.Open();
+
+        var table = new ConsoleTable("Id", "Quantity", "Date Logged", "Parent", "Foreign Key");
+        command.CommandText = "SELECT * FROM HabitsTracker";
+
+        
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
         {
-            using (var command = connection.CreateCommand())
-            {
-                connection.Open();
-                var table = new ConsoleTable("Id", "Quantity", "Date Logged", "Foreign Key");
-                command.CommandText = "SELECT * FROM HabitsTracker";
-
-                using (var reader = command.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        var id = reader.GetString(0);
-                        var quantity = reader.GetString(1);
-                        var dateLogged = reader.GetString(2);
-                        var foreignKey = reader.GetString(3);
-                        table.AddRow(id, quantity, dateLogged, foreignKey);
-                    }
-
-                    table.Write();
-                }
-            }
+            var id = reader.GetString(0);
+            var quantity = reader.GetString(1);
+            var dateLogged = reader.GetString(2);
+            var foreignKey = reader.GetString(3);
+            var parent = DatabaseManager.Instance.Habits.GetHabitName(Convert.ToInt32(foreignKey));
+            table.AddRow(id, quantity, dateLogged, parent, foreignKey);
+        }
+        table.Write();
+                
+        if (waitForUserResponse)
+        {
+            Console.Write("Press any key to continue. . .");
+            Console.ReadKey(false);
         }
     }
 
     /// <summary>
     /// Update the quantity, date, or foreign key of an entry in the HabitsTracker table.
     /// </summary>
-    /// <param name="entryId">The ID of the entry.</param>
-    /// <param name="updateString">The string to replace the old data.</param>
-    /// <param name="updateOption">Specify the data to update.</param>
-    public void Update(int entryId, string updateString, UpdateOptions updateOption)
+    public void Update()
     {
-        using (var connection = new SqliteConnection($"Data Source={Filename}"))
-        {
-            using (var command = connection.CreateCommand())
-            {
-                connection.Open();
+        Read(false);
+        int entryId = ConsoleHelper.GetInt("Enter the id of the entry you'd like to change: ");
+        Console.WriteLine("[0] Date (d-mm-yyyy)");
+        Console.WriteLine("[1] Quantity");
+        Console.WriteLine("[2] Foreign Key");
+        LoggingUpdateOptions updateOption = (LoggingUpdateOptions)ConsoleHelper.GetInt("Choose what you would like to update: ", 2);
+        string updateString = ConsoleHelper.GetValidString("Enter the new updated text: ");
 
-                switch (updateOption)
+        Console.WriteLine($"ID: {entryId} -- Update option: {updateOption.ToString()} -- New entry: {updateString}");
+        if (ConsoleHelper.Confirm("Confirm this update?"))
+        {
+            using (var connection = new SqliteConnection($"Data Source={Filename}"))
+            {
+                using (var command = connection.CreateCommand())
                 {
-                    case UpdateOptions.Date:
-                        command.CommandText =
-                            @"
+                    connection.Open();
+
+                    switch (updateOption)
+                    {
+                        case LoggingUpdateOptions.Date:
+                            command.CommandText =
+                                @"
 								UPDATE HabitsTracker
 								SET HabitName = $value
 								WHERE HabitId = $entryId;
 							";
-                        break;
-                    case UpdateOptions.Tquantity:
-                        command.CommandText =
-                            @"
+                            break;
+                        case LoggingUpdateOptions.Quantity:
+                            command.CommandText =
+                                @"
 								UPDATE HabitsTracker
 								SET EntryQuantity = $value
 								WHERE EntryId = $entryId;
 							";
-                        break;
-                    case UpdateOptions.TforeignKey:
-                        command.CommandText =
-                            @"
+                            break;
+                        case LoggingUpdateOptions.ForeginKey:
+                            command.CommandText =
+                                @"
 								UPDATE HabitsTracker
 								SET HabitId = $value
 								WHERE EntryId = $entryId;
 							";
-                        break;
-                    default:
-                        break;
+                            break;
+                        default:
+                            break;
+                    }
+
+                    command.Parameters.AddWithValue("$value", updateString);
+                    command.Parameters.AddWithValue("$entryId", entryId);
+
+                    TableHelper.TryExecuteNonQuery(connection, command);
                 }
-
-                command.Parameters.AddWithValue("$value", updateString);
-                command.Parameters.AddWithValue("$entryId", entryId);
-
-                TableHelper.TryExecuteNonQuery(connection, command);
             }
-        }
+        }        
     }
 
     /// <summary>
     /// Delete an from the HabitsTracker table.
     /// </summary>
-    /// <param name="entryId">The id of the entry to delete.</param>
-    public void Delete(int entryId)
+    public void Delete()
     {
-        using (var connection = new SqliteConnection($"Data Source={Filename}"))
-        {
-            using (var command = connection.CreateCommand())
-            {
-                connection.Open();
+        Read(false);
+        int entryId = ConsoleHelper.GetInt("Enter the id of the entry you'd like to change: ");
 
-                command.CommandText =
-                            @"
+        if (ConsoleHelper.Confirm("Confirm the deletion of this log?"))
+        {
+            using (var connection = new SqliteConnection($"Data Source={Filename}"))
+            {
+                using (var command = connection.CreateCommand())
+                {
+                    connection.Open();
+
+                    command.CommandText =
+                                @"
 								DELETE FROM HabitsTracker
 								WHERE EntryId = $entryId;
 							";
-                command.Parameters.AddWithValue("$entryId", entryId);
+                    command.Parameters.AddWithValue("$entryId", entryId);
 
-                TableHelper.TryExecuteNonQuery(connection, command);
+                    TableHelper.TryExecuteNonQuery(connection, command);
+                }
             }
-        }
+        }        
     }
 }
