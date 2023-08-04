@@ -33,13 +33,18 @@ public class MenuGenerator
                         },
                         new MenuItem()
                         {
-                            Text = "Edit a habit",
+                            Text = "View habits",
                             SubMenuId = 12
                         },
                         new MenuItem()
                         {
-                            Text = "Delete a habit",
+                            Text = "Edit a habit",
                             SubMenuId = 13
+                        },
+                        new MenuItem()
+                        {
+                            Text = "Delete a habit",
+                            SubMenuId = 14
                         },
                         new MenuItem()
                         {
@@ -73,14 +78,32 @@ public class MenuGenerator
                 },
                 new Menu()
                 {
-                    Title = "Edit a habit",
+                    Title = "View habits",
                     MenuId = 12,
                     MenuItems =
                     {
                         new MenuItem()
                         {
+                            Text = "View all habits",
+                            Action = () => DatabaseManager.Instance.Habits.Read(true)
+                        },
+                        new MenuItem()
+                        {
+                            Text = "Back to main menu",
+                            SubMenuId = 1
+                        }
+                    }
+                },
+                new Menu()
+                {
+                    Title = "Edit a habit",
+                    MenuId = 13,
+                    MenuItems =
+                    {
+                        new MenuItem()
+                        {
                             Text = "Continue to edit a habit",
-                            Action = () => DatabaseManager.Instance.Habits.Update(1, "", HabitsUpdateOptions.Name)
+                            Action = () => DatabaseManager.Instance.Habits.Update()
                         },
                         new MenuItem()
                         {
@@ -92,13 +115,13 @@ public class MenuGenerator
                 new Menu()
                 {
                     Title = "Delete a habit",
-                    MenuId = 13,
+                    MenuId = 14,
                     MenuItems =
                     {
                         new MenuItem()
                         {
                             Text = "Continue to delete a habit",
-                            Action = () => DatabaseManager.Instance.Habits.Delete(1)
+                            Action = () => DatabaseManager.Instance.Habits.Delete()
                         },
                         new MenuItem()
                         {
@@ -167,7 +190,7 @@ public class MenuGenerator
                         new MenuItem()
                         {
                             Text = "View log details",
-                            Action = () => DatabaseManager.Instance.HabitsTracker.Read()
+                            Action = () => DatabaseManager.Instance.HabitsTracker.Read(true)
                         },
                         new MenuItem()
                         {
@@ -185,7 +208,7 @@ public class MenuGenerator
                         new MenuItem()
                         {
                             Text = "Edit log details",
-                            Action = () => DatabaseManager.Instance.HabitsTracker.Update(1, "", LoggingUpdateOptions.Date)
+                            Action = () => DatabaseManager.Instance.HabitsTracker.Update()
                         },
                         new MenuItem()
                         {
@@ -203,7 +226,7 @@ public class MenuGenerator
                     new MenuItem()
                         {
                             Text = "Delete log",
-                            Action = () => DatabaseManager.Instance.HabitsTracker.Delete(1)
+                            Action = () => DatabaseManager.Instance.HabitsTracker.Delete()
                         },
                         new MenuItem()
                         {
