@@ -19,6 +19,7 @@ public class MenuCollection
         {
             while (true)
             {
+                Console.Clear();
                 ShowMenu(1);
             }            
         }
