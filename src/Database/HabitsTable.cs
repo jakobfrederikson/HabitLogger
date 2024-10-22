@@ -198,7 +198,6 @@ public class HabitsTable
 
     public string? GetHabitName(int habitId)
     {
-        Console.WriteLine("INSIDE GetHabitName: " + habitId);
         string? habitName;
         using var connection = new SqliteConnection($"Data Source={Filename}");
         using var command = connection.CreateCommand();
